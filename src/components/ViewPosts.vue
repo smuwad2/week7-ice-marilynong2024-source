@@ -36,9 +36,41 @@ export default {
     },
     methods: {
         editPost(id) {
+            let post;
+            for (const p of this.posts){
+                if (p.id === id){
+                    // console.log("Editing post:", post.id, post.entry, post.mood);
+                    post = p
+                    this.editPostId = Number(id);
+                    this.entry = post.entry;
+                    this.mood = post.mood ? post.mood.toLowerCase() : "happy";
+                    this.showEditPost = true; // show edit form
+                }
+            }
             
         },
         updatePost(event) {
+            event.preventDefault();
+
+            axios.post(`${this.baseUrl}/updatePost`, {
+                id: this.editPostId,
+                entry: this.entry,
+                mood: this.mood,
+            }).then(response => {
+                const index = this.posts.findIndex(p => p.id === this.editPostId);
+                if (index !== -1) {
+                    this.posts[index].entry = this.entry;
+                    this.posts[index].mood = this.mood;
+                }
+                // Reset form state
+                this.showEditPost = false;
+                this.entry = "";
+                this.mood = "";
+                this.editPostId = "";
+                alert("Post updated successfully!");
+            }).catch(error => {
+                alert("Error updating post: " + error.message);
+            })
             
         }
     }
@@ -61,7 +93,7 @@ export default {
                     <td>{{ post.id }}</td>
                     <td>{{ post.entry }}</td>
                     <td>{{ post.mood }}</td>
-                    <td><button>Edit</button></td>
+                    <td><button @click="editPost(post.id)">Edit</button></td>
                 </tr>
             </tbody>
 
@@ -70,7 +102,7 @@ export default {
         <div id="editPost" v-if="showEditPost">
             <h3>Edit Post</h3>
             <div id="postContent" class="mx-3">
-                <form>
+                <form @submit.prevent="updatePost">
                     <div class="mb-3">
                         <label for="entry" class="form-label">Entry</label>
                         <textarea id="entry" class="form-control" v-model="entry" required></textarea>
@@ -79,7 +111,7 @@ export default {
                         <label for="mood" class="form-label">Mood</label>
                         <select id="mood" class="form-select" v-model="mood" required>
                             <option value="" disabled>Select Mood</option>
-                            <option v-for="mood in moods" :value="mood">{{ mood }}</option>
+                            <option v-for="mood in moods" :key="mood" :value="mood.toLowerCase()">{{ mood }}</option>
                         </select>
                     </div>
                     <button type="submit" class="btn btn-primary">Update Post</button>
